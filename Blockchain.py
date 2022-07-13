@@ -20,6 +20,43 @@ class Blockchain:
         # return the last block of the chain
         # blockchainInstance.last_block 
         return self.chain[-1] # the last index of our chain
+    
+    @staticmethod
+    def proof_algorithm(prev_proof, new_proof):
+        # little algorithm that might produce the right amount of zeros
+        return hashlib.sha256(str(new_proof ** 2 - prev_proof ** 2).encode()).hexdigest()
+    
+    # @staticmethod
+    # def conseunsus(arbitrary amount of blockchains):
+    # be fancy and use a varaidic argument function if you want
+    # return the longest valid chain
+
+    # verifiable computational work
+    def proof_of_work(self, verbose=False):
+        # get the previous proof from the last block
+        previous_proof = self.last_block['proof']
+        # start calculating the 'nonce' or 'proof'
+        # basically the guess or arbitrary number to find the right proof
+        nonce = 1
+        # loop unitil our proof algoirthm returns the right proof
+        check_proof = False
+        while check_proof is False:
+            # use our proof algo to check the nonce
+            proof_guess = Blockchain.proof_algorithm(previous_proof, nonce)
+            # if we are in verbose mode, print out what is happening
+            if verbose:
+                # expression if condition else expression
+                #[where to start : where to end : numbers to count by]
+                # [start at 0: count to 4: count by 1]
+                print(nonce, 'matches!' if proof_guess[:4] == '0000' else 'does not match')
+            # if the proof we guess starts with '0000' -- we have a match! (break the loop)
+            if proof_guess[:4] == '0000':
+                check_proof = True
+            # otherwise -- increment nonce and start again!
+            else:
+                nonce += 1
+        # return the correct proof we found
+        return nonce
 
     def new_block(self, proof, previous_hash=None):
         # create a new block based on the pending transactions
@@ -57,6 +94,36 @@ class Blockchain:
 
         # return the hexdigest
         return hashlib.sha256(string_block).hexdigest()
+    
+    def validate_chain(self):
+        # we are going to self validate this chain
+        i = 0
+        # loop over the chain
+        while i < len(self) - 2:
+            # check if the hashes line up 
+            # compare in groups of 2
+            prev_block = self.chain[i]
+            next_block = self.chain[i + 1]
+
+            # verify the data integrity
+            if next_block['previous_hash'] != self.hash(prev_block):
+                return False
+
+            # validate that the hashes start with '0000' (do they have a correct proof of work)
+            # verify the computational work
+            work_check = Blockchain.proof_algorithm(prev_block['proof'], next_block['proof'])
+
+            # work check should return a valid '0000' hash string
+            if work_check[:4] != '0000':
+                return False
+            
+            i += 1
+        
+        return True
+
+
+
+
 
 
 bc = Blockchain()
@@ -64,10 +131,11 @@ bc.new_transaction('Taylor', 'Weston', 10)
 bc.new_transaction('Weston', 'April', 5)
 bc.new_transaction('Weston', 'June', 5)
 # the chain will be the same
-bc.new_block(1000)
+bc.new_block(bc.proof_of_work(verbose=True))
 bc.new_transaction('Grace', 'Wonjune', 100)
 bc.new_transaction('Wonjune', 'Heg', 50)
 bc.new_transaction('April', 'Emily H.', 7)
-bc.new_block(7000)
+bc.new_block(bc.proof_of_work(verbose=True))
 pprint(bc.pending_transactions)
 pprint(bc.chain)
+print(bc.validate_chain())
