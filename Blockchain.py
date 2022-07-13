@@ -26,10 +26,26 @@ class Blockchain:
         # little algorithm that might produce the right amount of zeros
         return hashlib.sha256(str(new_proof ** 2 - prev_proof ** 2).encode()).hexdigest()
     
-    # @staticmethod
-    # def conseunsus(arbitrary amount of blockchains):
-    # be fancy and use a varaidic argument function if you want
-    # return the longest valid chain
+    @staticmethod
+    # *args = varaible amount of arguments 'variadic argument functions'
+    def consensus(*args):
+        # filter out all chains that do not pass validation
+        valid_chains = []
+        for chain in args:
+            if chain.validate_chain():
+                valid_chains.append(chain)
+        
+        # if there are not valid chains return false  
+        if len(valid_chains) == 0:
+            return False
+
+        # find the longest valid chain and return it
+        longest_valid = valid_chains[0]
+        for chain in valid_chains:
+            if len(chain) > len(longest_valid):
+                longest_valid = chain
+        
+        return longest_valid
 
     # verifiable computational work
     def proof_of_work(self, verbose=False):
@@ -136,6 +152,17 @@ bc.new_transaction('Grace', 'Wonjune', 100)
 bc.new_transaction('Wonjune', 'Heg', 50)
 bc.new_transaction('April', 'Emily H.', 7)
 bc.new_block(bc.proof_of_work(verbose=True))
-pprint(bc.pending_transactions)
-pprint(bc.chain)
-print(bc.validate_chain())
+# pprint(bc.pending_transactions)
+# pprint(bc.chain)
+# print(bc.validate_chain())
+
+# has a bad proof of work
+not_valid = Blockchain()
+not_valid.new_transaction('Taylor', 'Weston', 100)
+not_valid.new_block(2345754)
+
+old_chain = Blockchain()
+old_chain.chain = bc.chain[:len(bc) - 2] # missing a couple blocks
+
+current_chain = Blockchain.consensus(bc, not_valid, old_chain)
+pprint(current_chain.chain)
